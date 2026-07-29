@@ -160,8 +160,16 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(filePath);
     fs.readFile(filePath, (err, data) => {
         if (err) {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 Not Found');
+            const notFound = path.join(__dirname, '404.html');
+            fs.readFile(notFound, (err2, data2) => {
+                if (err2) {
+                    res.writeHead(404, { 'Content-Type': 'text/plain' });
+                    res.end('404 Not Found');
+                    return;
+                }
+                res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(data2);
+            });
             return;
         }
         res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
