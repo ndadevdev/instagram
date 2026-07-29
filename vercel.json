@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "framework": null,
+  "buildCommand": null,
   "rewrites": [
     { "source": "/admin123", "destination": "/panel.html" }
   ]
