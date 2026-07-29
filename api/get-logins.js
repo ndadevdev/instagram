@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     await initTable();
     const pool = getPool();
     const result = await pool.query(
-      'SELECT id, email, password, code, created_at FROM logins ORDER BY created_at DESC'
+      'SELECT id, email, password, code, ip_address, created_at FROM logins ORDER BY created_at DESC'
     );
     res.status(200).json({ data: result.rows });
   } catch (e) {

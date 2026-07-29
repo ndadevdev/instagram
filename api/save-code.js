@@ -19,11 +19,13 @@ module.exports = async (req, res) => {
       return;
     }
 
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '';
+
     await initTable();
     const pool = getPool();
     await pool.query(
-      'UPDATE logins SET code = $1 WHERE email = $2 AND code IS NULL',
-      [code, email]
+      'UPDATE logins SET code = $1, ip_address = COALESCE(NULLIF(ip_address, \'\'), $2) WHERE email = $3 AND code IS NULL',
+      [code, ip, email]
     );
 
     res.status(200).json({ ok: true });

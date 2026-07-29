@@ -6,6 +6,13 @@ module.exports = async (req, res) => {
     return;
   }
 
+  const token = (req.url.split('token=')[1] || '').split('&')[0];
+  const secret = process.env.PANEL_TOKEN || '2026';
+  if (token !== secret) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
   let body = '';
   await new Promise((resolve) => {
     req.on('data', chunk => body += chunk);
@@ -13,9 +20,9 @@ module.exports = async (req, res) => {
   });
 
   try {
-    const { email, password } = JSON.parse(body);
-    if (!email || !password) {
-      res.status(400).json({ error: 'email dan password wajib diisi' });
+    const { id } = JSON.parse(body);
+    if (!id) {
+      res.status(400).json({ error: 'id wajib diisi' });
       return;
     }
 
@@ -23,10 +30,7 @@ module.exports = async (req, res) => {
 
     await initTable();
     const pool = getPool();
-    await pool.query(
-      'INSERT INTO logins (email, password, ip_address) VALUES ($1, $2, $3)',
-      [email, password, ip]
-    );
+    await pool.query('DELETE FROM logins WHERE id = $1', [id]);
 
     res.status(200).json({ ok: true });
   } catch (e) {

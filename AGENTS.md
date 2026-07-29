@@ -29,6 +29,7 @@ Buka `/admin123` di browser. Token: `2026` (atau set env `PANEL_TOKEN`).
 | `/api/save-login` | POST | `{ email, password }` | Simpan login |
 | `/api/save-code` | POST | `{ email, code }` | Simpan kode 2FA |
 | `/api/get-logins` | GET | `?token=2026` | Ambil semua data login |
+| `/api/delete-login` | POST | `?token=2026` body `{ id }` | Hapus data login by ID |
 
 ## Routing
 
