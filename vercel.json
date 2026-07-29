@@ -3,6 +3,8 @@
   "framework": null,
   "buildCommand": null,
   "rewrites": [
-    { "source": "/admin123", "destination": "/panel.html" }
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/admin123", "destination": "/panel.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }
